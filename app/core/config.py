@@ -41,8 +41,8 @@ class Settings(BaseSettings):
 
     # Vector Store
     chroma_persist_directory: str = "./chroma_db"
-    chunk_size: int = 500
-    chunk_overlap: int = 100
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
 
     # Rate Limiting
     max_requests_per_user_per_day: int = 100

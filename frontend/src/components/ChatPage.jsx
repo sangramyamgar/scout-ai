@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { 
-  Send, LogOut, User, Shield, Database, Clock, MessageSquare, 
+  Send, LogOut, User, Shield, Database, MessageSquare, 
   ChevronDown, ChevronUp, FileText, Sparkles, Moon, Sun,
-  Compass, Building2, BarChart3, Users, Briefcase, BookOpen, ExternalLink
+  Compass, Building2, BarChart3, Users, Briefcase, BookOpen, Info
 } from 'lucide-react'
 
 // Sample questions per role - matched to actual document content
@@ -53,7 +53,7 @@ const SAMPLE_QUESTIONS = {
 
 // Format source document names
 const formatSourceName = (source) => {
-  if (!source) return 'Document'
+  if (!source) return 'Unknown Document'
   const name = source.replace(/\.[^/.]+$/, '')
     .replace(/_/g, ' ')
     .replace(/-/g, ' ')
@@ -91,21 +91,113 @@ const getDepartmentIcon = (dept) => {
 const cleanSourceText = (text) => {
   if (!text) return ''
   return text
-    .replace(/^#{1,6}\s*/gm, '') // Remove heading markers
-    .replace(/\*\*/g, '') // Remove bold
-    .replace(/\*/g, '') // Remove italic
-    .replace(/`{1,3}/g, '') // Remove code markers
-    .replace(/^\s*[-*+]\s*/gm, '• ') // Convert list markers
-    .replace(/^\|.*\|$/gm, '') // Remove table rows
-    .replace(/^\s*[-:]+\s*$/gm, '') // Remove table separators
-    .replace(/\n{3,}/g, '\n\n') // Reduce multiple newlines
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/`{1,3}/g, '')
+    .replace(/^\s*[-*+]\s*/gm, '• ')
+    .replace(/^\|.*\|$/gm, '')
+    .replace(/^\s*[-:]+\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^---+$/gm, '')
     .trim()
 }
 
-// Remove [Source N] from response text
-const cleanResponseText = (text) => {
-  if (!text) return ''
-  return text.replace(/\[Source\s*\d+\]/gi, '').trim()
+// Citation component with hover tooltip
+const Citation = ({ index, source, darkMode }) => {
+  const [showTooltip, setShowTooltip] = useState(false)
+  const DeptIcon = getDepartmentIcon(source?.department)
+  
+  return (
+    <span className="relative inline-block">
+      <button
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)}
+        className={`inline-flex items-center justify-center w-5 h-5 text-xs font-medium rounded-full mx-0.5 cursor-pointer transition-all
+          ${darkMode 
+            ? 'bg-scout-600/30 text-scout-400 hover:bg-scout-600/50' 
+            : 'bg-scout-100 text-scout-700 hover:bg-scout-200'}`}
+      >
+        {index}
+      </button>
+      
+      {showTooltip && source && (
+        <div className={`absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 rounded-lg shadow-xl border animate-fade-in-up
+          ${darkMode 
+            ? 'bg-slate-800 border-slate-700 text-slate-200' 
+            : 'bg-white border-slate-200 text-slate-700'}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-6 h-6 rounded flex items-center justify-center
+              ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+              <DeptIcon className={`w-3.5 h-3.5 ${darkMode ? 'text-scout-400' : 'text-scout-600'}`} />
+            </div>
+            <div>
+              <p className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                {formatSourceName(source.filename)}
+              </p>
+              <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                {formatDepartment(source.department)}
+              </p>
+            </div>
+          </div>
+          <p className={`text-xs leading-relaxed ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            {cleanSourceText(source.chunk || source.content)}
+          </p>
+          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-0 h-0 
+            border-l-8 border-r-8 border-t-8 border-transparent
+            ${darkMode ? 'border-t-slate-800' : 'border-t-white'}`} />
+        </div>
+      )}
+    </span>
+  )
+}
+
+// Parse response and add inline citations
+const ResponseWithCitations = ({ text, sources, darkMode }) => {
+  if (!text) return null
+  
+  // Add citation markers at the end of key sentences
+  const addCitations = (text, sources) => {
+    if (!sources || sources.length === 0) return text
+    
+    // Split into paragraphs
+    const paragraphs = text.split('\n\n')
+    
+    // For each paragraph, add a relevant citation at the end
+    return paragraphs.map((para, idx) => {
+      const sourceIdx = Math.min(idx, sources.length - 1)
+      // Only add citation if paragraph has substance
+      if (para.trim().length > 50) {
+        return `${para.trim()} [cite:${sourceIdx + 1}]`
+      }
+      return para
+    }).join('\n\n')
+  }
+  
+  const citedText = addCitations(text, sources)
+  
+  // Parse and render with citations
+  const parts = citedText.split(/(\[cite:\d+\])/)
+  
+  return (
+    <span>
+      {parts.map((part, idx) => {
+        const match = part.match(/\[cite:(\d+)\]/)
+        if (match) {
+          const citationIdx = parseInt(match[1])
+          const source = sources[citationIdx - 1]
+          return <Citation key={idx} index={citationIdx} source={source} darkMode={darkMode} />
+        }
+        // Render text with basic formatting
+        return <span key={idx} dangerouslySetInnerHTML={{ 
+          __html: part
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br/>')
+        }} />
+      })}
+    </span>
+  )
 }
 
 export default function ChatPage({ user, onLogout }) {
@@ -157,27 +249,28 @@ export default function ChatPage({ user, onLogout }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Basic ' + btoa(`${user.apiUser}:password123`)
+          'Authorization': 'Basic ' + btoa(`${user.apiUser}:${user.apiPass}`)
         },
         body: JSON.stringify({ message: input })
       })
 
       const data = await response.json()
       
-      if (data.error) {
+      if (data.error || data.metadata?.error) {
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: data.error,
+          content: data.response || data.error || 'An error occurred',
           isError: true 
         }])
       } else {
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: cleanResponseText(data.response),
+          content: data.response,
           sources: data.sources || []
         }])
       }
     } catch (error) {
+      console.error('Chat error:', error)
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: 'Unable to connect to the server. Please ensure the backend is running.',
@@ -196,6 +289,13 @@ export default function ChatPage({ user, onLogout }) {
   }
 
   const sampleQuestions = SAMPLE_QUESTIONS[user.role] || SAMPLE_QUESTIONS.employee
+  
+  // Get random suggestions for the input area (different from what was asked)
+  const getRandomSuggestions = () => {
+    const asked = messages.filter(m => m.role === 'user').map(m => m.content)
+    const available = sampleQuestions.filter(q => !asked.includes(q))
+    return available.slice(0, 3)
+  }
 
   return (
     <div className={`min-h-screen flex flex-col ${darkMode ? 'dark bg-slate-900' : 'bg-slate-50'}`}>
@@ -363,7 +463,15 @@ export default function ChatPage({ user, onLogout }) {
                           ? 'bg-slate-800 border border-slate-700 text-slate-200'
                           : 'bg-white border border-slate-200 text-slate-700'
                   }`}>
-                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    {message.role === 'assistant' && message.sources && message.sources.length > 0 ? (
+                      <ResponseWithCitations 
+                        text={message.content} 
+                        sources={message.sources} 
+                        darkMode={darkMode}
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    )}
                   </div>
 
                   {/* Sources */}
@@ -377,7 +485,7 @@ export default function ChatPage({ user, onLogout }) {
                             : 'text-slate-500 hover:text-scout-600'}`}
                       >
                         <FileText className="w-4 h-4" />
-                        <span>{message.sources.length} source{message.sources.length > 1 ? 's' : ''}</span>
+                        <span>View {message.sources.length} source{message.sources.length > 1 ? 's' : ''}</span>
                         {expandedSources[index] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                       
@@ -402,7 +510,7 @@ export default function ChatPage({ user, onLogout }) {
                                     </div>
                                     <div>
                                       <p className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                                        {formatSourceName(source.source)}
+                                        {formatSourceName(source.filename)}
                                       </p>
                                       <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                                         {formatDepartment(source.department)}
@@ -416,9 +524,9 @@ export default function ChatPage({ user, onLogout }) {
                                     #{sIdx + 1}
                                   </span>
                                 </div>
-                                <p className={`text-sm leading-relaxed line-clamp-3
+                                <p className={`text-sm leading-relaxed
                                   ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                                  {cleanSourceText(source.content)}
+                                  {cleanSourceText(source.chunk || source.content)}
                                 </p>
                               </div>
                             )
@@ -433,23 +541,22 @@ export default function ChatPage({ user, onLogout }) {
             
             {isLoading && (
               <div className="flex justify-start animate-fade-in-up">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 bg-gradient-to-br from-scout-500 to-scout-700 rounded-lg flex items-center justify-center">
-                    <Compass className="w-4 h-4 text-white" />
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 bg-gradient-to-br from-scout-500 to-scout-700 rounded-lg flex items-center justify-center">
+                      <Compass className="w-4 h-4 text-white" />
+                    </div>
+                    <span className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Scout</span>
                   </div>
-                  <span className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Scout</span>
+                  <div className={`rounded-2xl px-4 py-3 inline-flex items-center gap-1
+                    ${darkMode 
+                      ? 'bg-slate-800 border border-slate-700' 
+                      : 'bg-white border border-slate-200'}`}>
+                    <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
+                    <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
+                    <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            {isLoading && (
-              <div className={`rounded-2xl px-4 py-3 inline-flex items-center gap-1 ml-8
-                ${darkMode 
-                  ? 'bg-slate-800 border border-slate-700' 
-                  : 'bg-white border border-slate-200'}`}>
-                <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
-                <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
-                <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
               </div>
             )}
             
@@ -464,6 +571,27 @@ export default function ChatPage({ user, onLogout }) {
           ? 'bg-slate-900/95 border-slate-800' 
           : 'bg-white/95 border-slate-200'}`}>
         <div className="max-w-4xl mx-auto px-4 py-4">
+          {/* Suggestions above input when there are messages */}
+          {messages.length > 0 && getRandomSuggestions().length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                Suggestions:
+              </span>
+              {getRandomSuggestions().map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSampleQuestion(q)}
+                  className={`text-xs px-3 py-1 rounded-full transition-colors truncate max-w-[250px]
+                    ${darkMode 
+                      ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-scout-400 border border-slate-700' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-scout-50 hover:text-scout-700 border border-slate-200'}`}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="flex gap-3">
             <input
               ref={inputRef}

@@ -145,7 +145,7 @@ def citation_check_node(state: AgentState) -> AgentState:
     # Check if top documents are sufficiently relevant
     top_score = docs[0].metadata.get("rerank_score", 0) if docs else 0
 
-    if top_score < -5:  # Cross-encoder can give negative scores for irrelevant
+    if top_score < -8:  # Cross-encoder scores range from -10 to +10
         return {
             **state,
             "response": "I couldn't find relevant information to answer your question. Please try rephrasing or ask about a different topic.",

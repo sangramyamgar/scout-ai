@@ -51,14 +51,6 @@ class Reranker:
         if not documents:
             return []
 
-        if len(documents) <= top_k:
-            # No need to re-rank if we have fewer docs than requested
-            pairs = [(query, doc.page_content) for doc in documents]
-            scores = self.model.predict(pairs)
-            scored_docs = list(zip(documents, scores))
-            scored_docs.sort(key=lambda x: x[1], reverse=True)
-            return [doc for doc, _ in scored_docs]
-
         # Create query-document pairs for scoring
         pairs = [(query, doc.page_content) for doc in documents]
 
@@ -71,7 +63,7 @@ class Reranker:
         # Sort by score (descending)
         scored_docs.sort(key=lambda x: x[1], reverse=True)
 
-        # Add relevance score to metadata
+        # Add relevance score to metadata and return top_k
         reranked = []
         for doc, score in scored_docs[:top_k]:
             doc.metadata["rerank_score"] = float(score)
