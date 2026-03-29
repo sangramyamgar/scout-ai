@@ -1,504 +1,498 @@
 import { useState, useRef, useEffect } from 'react'
 import { 
-  Compass, Send, LogOut, User, Shield, Database, BarChart3, 
-  FileText, ChevronDown, ChevronRight, Sparkles, AlertCircle,
-  Building2, MessageSquare, RefreshCw, Copy, Check, ExternalLink
+  Send, LogOut, User, Shield, Database, Clock, MessageSquare, 
+  ChevronDown, ChevronUp, FileText, Sparkles, Moon, Sun,
+  Compass, Building2, BarChart3, Users, Briefcase, BookOpen, ExternalLink
 } from 'lucide-react'
 
-// Sample questions by role
+// Sample questions per role - matched to actual document content
 const SAMPLE_QUESTIONS = {
   finance: [
-    "What was our gross margin in Q4 2024?",
-    "Show me the quarterly revenue breakdown",
-    "What are our key financial ratios?",
-    "Summarize marketing expenses for 2024"
+    "What was the revenue growth in 2024 and what drove it?",
+    "What are the key financial ratios and how do they compare to industry benchmarks?",
+    "What is the breakdown of vendor service expenses?",
+    "What are the cash flow trends and recommendations for improvement?",
+    "What risks should finance focus on and how can they be mitigated?",
   ],
   marketing: [
-    "What were the Q3 campaign results?",
-    "Show me customer acquisition metrics",
-    "What's our social media performance?",
-    "Summarize the marketing strategy for 2024"
+    "What is our total marketing budget and how is it allocated across channels?",
+    "What is our social media performance across different platforms?",
+    "What were the results of our Google Ads campaigns?",
+    "What is our customer acquisition cost by channel and which is most efficient?",
+    "What were our top performing content pieces in 2024?",
   ],
   hr: [
-    "What are the employee attendance trends?",
-    "Show me performance review statistics",
-    "What are our payroll expenses?",
-    "List employees by department"
+    "What is the current headcount breakdown by department?",
+    "What are the salary bands for different job levels?",
+    "What percentage of employees received outstanding performance ratings?",
+    "What is the company attendance rate and leave utilization pattern?",
+    "What training programs were conducted in 2024 and what was the investment?",
   ],
   engineering: [
-    "Explain our technical architecture",
-    "What are the development guidelines?",
-    "Show me the deployment process",
-    "What security protocols do we follow?"
+    "What is the high-level system architecture of the platform?",
+    "What microservices are part of the backend and what do they do?",
+    "What databases are used and for what purposes?",
+    "What is the CI/CD pipeline and deployment process?",
+    "What security and compliance frameworks are implemented?",
   ],
   c_level: [
-    "Give me an executive summary of Q4",
-    "What are the key risks and mitigations?",
-    "Compare department performance",
-    "What's our overall financial health?"
+    "What is the overall company revenue and employee count?",
+    "What is our market position compared to competitors?",
+    "What are the key performance metrics across all departments?",
+    "What is the employee retention rate and engagement score?",
+    "What are the main business risks and how are they being addressed?",
   ],
   employee: [
-    "What's the company leave policy?",
-    "When is the next company event?",
-    "What are the office guidelines?",
-    "How do I submit expense reports?"
-  ]
+    "What are the company's core values and mission?",
+    "What are the upcoming company events?",
+    "What office locations does the company have?",
+    "Who are the members of the executive team?",
+    "What products and services does the company offer?",
+  ],
 }
 
-const ROLE_INFO = {
-  finance: { icon: BarChart3, color: 'emerald', access: ['Finance Reports', 'General Info'] },
-  marketing: { icon: Sparkles, color: 'purple', access: ['Marketing Data', 'General Info'] },
-  hr: { icon: User, color: 'amber', access: ['HR Records', 'General Info'] },
-  engineering: { icon: Database, color: 'blue', access: ['Tech Docs', 'General Info'] },
-  c_level: { icon: Building2, color: 'rose', access: ['All Departments'] },
-  employee: { icon: User, color: 'slate', access: ['General Info'] },
+// Format source document names
+const formatSourceName = (source) => {
+  if (!source) return 'Document'
+  const name = source.replace(/\.[^/.]+$/, '')
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+  return name
 }
 
-// API Configuration
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Get department label
+const formatDepartment = (dept) => {
+  const labels = {
+    engineering: 'Engineering',
+    finance: 'Finance',
+    hr: 'Human Resources',
+    marketing: 'Marketing',
+    general: 'Company Information'
+  }
+  return labels[dept] || dept
+}
+
+// Get department icon
+const getDepartmentIcon = (dept) => {
+  const icons = {
+    engineering: BarChart3,
+    finance: Briefcase,
+    hr: Users,
+    marketing: BarChart3,
+    general: Building2
+  }
+  return icons[dept] || FileText
+}
+
+// Clean markdown artifacts from source text
+const cleanSourceText = (text) => {
+  if (!text) return ''
+  return text
+    .replace(/^#{1,6}\s*/gm, '') // Remove heading markers
+    .replace(/\*\*/g, '') // Remove bold
+    .replace(/\*/g, '') // Remove italic
+    .replace(/`{1,3}/g, '') // Remove code markers
+    .replace(/^\s*[-*+]\s*/gm, '• ') // Convert list markers
+    .replace(/^\|.*\|$/gm, '') // Remove table rows
+    .replace(/^\s*[-:]+\s*$/gm, '') // Remove table separators
+    .replace(/\n{3,}/g, '\n\n') // Reduce multiple newlines
+    .trim()
+}
+
+// Remove [Source N] from response text
+const cleanResponseText = (text) => {
+  if (!text) return ''
+  return text.replace(/\[Source\s*\d+\]/gi, '').trim()
+}
 
 export default function ChatPage({ user, onLogout }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [showSidebar, setShowSidebar] = useState(true)
-  const [usage, setUsage] = useState({ requests_today: 0, max_requests_per_day: 100 })
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [expandedSources, setExpandedSources] = useState({})
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('scout_darkMode')
+    return saved ? JSON.parse(saved) : false
+  })
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
-  const roleInfo = ROLE_INFO[user.role] || ROLE_INFO.employee
-  const sampleQuestions = SAMPLE_QUESTIONS[user.role] || SAMPLE_QUESTIONS.employee
-
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  useEffect(() => {
-    fetchUsage()
-  }, [])
-
-  const fetchUsage = async () => {
-    try {
-      const credentials = btoa(`${user.apiUser}:${user.apiPass}`)
-      const res = await fetch(`${API_BASE}/usage`, {
-        headers: { 'Authorization': `Basic ${credentials}` }
-      })
-      if (res.ok) {
-        setUsage(await res.json())
-      }
-    } catch (e) {
-      console.error('Failed to fetch usage:', e)
+    localStorage.setItem('scout_darkMode', JSON.stringify(darkMode))
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
     }
+  }, [darkMode])
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const sendMessage = async (text) => {
-    if (!text.trim() || isLoading) return
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
-    const userMessage = { role: 'user', content: text, timestamp: new Date() }
+  const handleSampleQuestion = (question) => {
+    setInput(question)
+    inputRef.current?.focus()
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+
+    const userMessage = { role: 'user', content: input }
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
 
     try {
-      const credentials = btoa(`${user.apiUser}:${user.apiPass}`)
-      const res = await fetch(`${API_BASE}/chat`, {
+      const response = await fetch('http://localhost:8000/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`
+          'Authorization': 'Basic ' + btoa(`${user.apiUser}:password123`)
         },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({ message: input })
       })
 
-      const data = await res.json()
+      const data = await response.json()
       
-      const assistantMessage = {
-        role: 'assistant',
-        content: data.response || 'Sorry, I encountered an error.',
-        sources: data.sources || [],
-        metadata: data.metadata || {},
-        timestamp: new Date()
+      if (data.error) {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: data.error,
+          isError: true 
+        }])
+      } else {
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: cleanResponseText(data.response),
+          sources: data.sources || []
+        }])
       }
-      
-      setMessages(prev => [...prev, assistantMessage])
-      fetchUsage()
     } catch (error) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Sorry, I could not connect to the server. Please try again.',
-        error: true,
-        timestamp: new Date()
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Unable to connect to the server. Please ensure the backend is running.',
+        isError: true 
       }])
-    } finally {
-      setIsLoading(false)
     }
+
+    setIsLoading(false)
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    sendMessage(input)
+  const toggleSources = (messageIndex) => {
+    setExpandedSources(prev => ({
+      ...prev,
+      [messageIndex]: !prev[messageIndex]
+    }))
   }
 
-  const handleSampleQuestion = (question) => {
-    sendMessage(question)
-  }
+  const sampleQuestions = SAMPLE_QUESTIONS[user.role] || SAMPLE_QUESTIONS.employee
 
   return (
-    <div className="h-screen flex bg-slate-50">
-      {/* Sidebar */}
-      <aside className={`${showSidebar ? 'w-72' : 'w-0'} transition-all duration-300 overflow-hidden bg-white border-r border-slate-200 flex flex-col`}>
-        <div className="p-5 border-b border-slate-100">
+    <div className={`min-h-screen flex flex-col ${darkMode ? 'dark bg-slate-900' : 'bg-slate-50'}`}>
+      {/* Header */}
+      <header className={`sticky top-0 z-50 border-b backdrop-blur-lg
+        ${darkMode 
+          ? 'bg-slate-900/95 border-slate-800' 
+          : 'bg-white/95 border-slate-200'}`}>
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-scout-500 to-scout-700 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-scout-500 to-scout-700 rounded-xl flex items-center justify-center shadow-lg shadow-scout-500/20">
               <Compass className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold gradient-text">Scout</h1>
-              <p className="text-xs text-slate-400">Knowledge Assistant</p>
-            </div>
-          </div>
-        </div>
-
-        {/* User Info */}
-        <div className="p-5 border-b border-slate-100">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-scout-100 to-scout-200 rounded-full flex items-center justify-center">
-              <span className="text-scout-700 font-semibold text-sm">
-                {user.name.split(' ').map(n => n[0]).join('')}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-800 truncate">{user.name}</p>
-              <p className="text-xs text-slate-400 truncate">{user.email}</p>
+              <h1 className={`font-bold text-lg ${darkMode ? 'text-white' : 'text-slate-900'}`}>Scout</h1>
+              <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Enterprise Knowledge Assistant</p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <roleInfo.icon className={`w-4 h-4 text-${roleInfo.color}-500`} />
-              <span className="text-slate-600">{user.department}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Shield className="w-4 h-4 text-scout-500" />
-              <span className="text-slate-600">
-                {roleInfo.access.join(', ')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Usage Stats */}
-        <div className="p-5 border-b border-slate-100">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-            Today's Usage
-          </h3>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-600">Queries</span>
-              <span className="font-medium text-slate-800">
-                {usage.requests_today} / {usage.max_requests_per_day}
-              </span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-scout-400 to-scout-600 h-2 rounded-full transition-all"
-                style={{ width: `${(usage.requests_today / usage.max_requests_per_day) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="p-5 flex-1">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-            Try asking
-          </h3>
-          <div className="space-y-2">
-            {sampleQuestions.map((q, i) => (
-              <button
-                key={i}
-                onClick={() => handleSampleQuestion(q)}
-                className="w-full text-left px-3 py-2.5 text-sm text-slate-600 bg-slate-50 
-                         rounded-lg hover:bg-scout-50 hover:text-scout-700 transition-colors
-                         border border-transparent hover:border-scout-200"
-              >
-                <MessageSquare className="w-3.5 h-3.5 inline mr-2 opacity-50" />
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Logout */}
-        <div className="p-5 border-t border-slate-100">
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm
-                     text-slate-600 bg-slate-50 rounded-lg hover:bg-red-50 hover:text-red-600
-                     transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign out
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-          <button
-            onClick={() => setShowSidebar(!showSidebar)}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${showSidebar ? 'rotate-180' : ''}`} />
-          </button>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-              Connected
-            </div>
+          <div className="flex items-center gap-3">
+            {/* Dark mode toggle */}
             <button
-              onClick={() => setMessages([])}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
-              title="Clear chat"
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-lg transition-colors
+                ${darkMode 
+                  ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
-              <RefreshCw className="w-5 h-5" />
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-          </div>
-        </header>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {messages.length === 0 ? (
-            <WelcomeScreen 
-              user={user} 
-              sampleQuestions={sampleQuestions}
-              onQuestionClick={handleSampleQuestion}
-            />
-          ) : (
-            <div className="max-w-4xl mx-auto space-y-6">
-              {messages.map((msg, i) => (
-                <MessageBubble key={i} message={msg} />
-              ))}
-              {isLoading && <TypingIndicator />}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
-
-        {/* Input */}
-        <div className="p-6 bg-white border-t border-slate-200">
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+            {/* User menu */}
             <div className="relative">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask Scout anything about your company data..."
-                disabled={isLoading}
-                className="w-full px-5 py-4 pr-14 rounded-2xl border border-slate-200 bg-slate-50
-                         focus:bg-white focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20
-                         disabled:opacity-50 transition-all text-slate-800 placeholder:text-slate-400"
-              />
               <button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5
-                         bg-gradient-to-r from-scout-500 to-scout-600 text-white rounded-xl
-                         hover:from-scout-600 hover:to-scout-700 disabled:opacity-30 
-                         disabled:cursor-not-allowed transition-all"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-colors
+                  ${darkMode 
+                    ? 'bg-slate-800 hover:bg-slate-700' 
+                    : 'bg-slate-100 hover:bg-slate-200'}`}
               >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-xs text-slate-400 mt-2 text-center">
-              Scout can make mistakes. Verify important information from source documents.
-            </p>
-          </form>
-        </div>
-      </main>
-    </div>
-  )
-}
-
-function WelcomeScreen({ user, sampleQuestions, onQuestionClick }) {
-  return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center max-w-2xl">
-        <div className="w-20 h-20 bg-gradient-to-br from-scout-500 to-scout-700 rounded-2xl 
-                      flex items-center justify-center mx-auto mb-6 shadow-lg shadow-scout-500/25">
-          <Compass className="w-10 h-10 text-white" />
-        </div>
-        <h2 className="text-3xl font-bold text-slate-800 mb-3">
-          Hello, {user.name.split(' ')[0]}!
-        </h2>
-        <p className="text-slate-500 text-lg mb-8">
-          I'm Scout, your AI knowledge assistant. Ask me anything about company data 
-          you have access to.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
-          {sampleQuestions.map((q, i) => (
-            <button
-              key={i}
-              onClick={() => onQuestionClick(q)}
-              className="p-4 bg-white rounded-xl border border-slate-200 hover:border-scout-300 
-                       hover:shadow-md hover:shadow-scout-100 transition-all text-left group"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-scout-100 rounded-lg flex items-center justify-center 
-                              group-hover:bg-scout-200 transition-colors">
-                  <MessageSquare className="w-4 h-4 text-scout-600" />
+                <div className="w-8 h-8 bg-gradient-to-br from-scout-100 to-scout-200 rounded-full flex items-center justify-center">
+                  <span className="text-scout-700 font-medium text-sm">
+                    {user.name.split(' ').map(n => n[0]).join('')}
+                  </span>
                 </div>
-                <span className="text-slate-600 group-hover:text-slate-800 text-sm flex-1">
-                  {q}
+                <span className={`font-medium text-sm hidden sm:inline ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {user.name}
                 </span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function MessageBubble({ message }) {
-  const [showSources, setShowSources] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const isUser = message.role === 'user'
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(message.content)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
-      <div className={`max-w-[85%] ${isUser ? 'order-2' : ''}`}>
-        {/* Avatar and Name */}
-        <div className={`flex items-center gap-2 mb-1 ${isUser ? 'justify-end' : ''}`}>
-          {!isUser && (
-            <div className="w-6 h-6 bg-gradient-to-br from-scout-500 to-scout-700 rounded-lg 
-                          flex items-center justify-center">
-              <Compass className="w-3.5 h-3.5 text-white" />
-            </div>
-          )}
-          <span className="text-xs font-medium text-slate-500">
-            {isUser ? 'You' : 'Scout'}
-          </span>
-          <span className="text-xs text-slate-400">
-            {message.timestamp?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
-
-        {/* Message Content */}
-        <div className={`rounded-2xl px-5 py-4 ${
-          isUser 
-            ? 'bg-gradient-to-r from-scout-500 to-scout-600 text-white' 
-            : message.error 
-              ? 'bg-red-50 border border-red-100 text-red-700'
-              : 'bg-white border border-slate-200 text-slate-700'
-        }`}>
-          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-          
-          {/* Sources */}
-          {!isUser && message.sources?.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <button
-                onClick={() => setShowSources(!showSources)}
-                className="flex items-center gap-2 text-sm text-scout-600 hover:text-scout-700"
-              >
-                <FileText className="w-4 h-4" />
-                {message.sources.length} source{message.sources.length > 1 ? 's' : ''}
-                <ChevronDown className={`w-4 h-4 transition-transform ${showSources ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`} />
               </button>
-              
-              {showSources && (
-                <div className="mt-3 space-y-3">
-                  {message.sources.map((source, i) => (
-                    <SourceCard key={i} source={source} index={i + 1} />
-                  ))}
+
+              {showUserMenu && (
+                <div className={`absolute right-0 mt-2 w-72 rounded-xl shadow-xl border overflow-hidden z-50
+                  ${darkMode 
+                    ? 'bg-slate-800 border-slate-700 shadow-slate-900/50' 
+                    : 'bg-white border-slate-200'}`}>
+                  <div className={`p-4 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+                    <p className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{user.name}</p>
+                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{user.department}</p>
+                  </div>
+                  
+                  <div className={`p-3 space-y-2 border-b ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+                    <div className={`flex items-center gap-3 px-2 py-1.5 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+                      <Shield className={`w-4 h-4 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`} />
+                      <div>
+                        <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Role</p>
+                        <p className={`text-sm font-medium capitalize ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                          {user.role.replace('_', ' ')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`flex items-center gap-3 px-2 py-1.5 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+                      <Database className={`w-4 h-4 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`} />
+                      <div>
+                        <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Data Access</p>
+                        <p className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                          {user.access.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={onLogout}
+                    className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-red-500 hover:bg-red-50 
+                      dark:hover:bg-red-900/20 transition-colors`}
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      </header>
 
-          {/* Metadata */}
-          {!isUser && message.metadata?.model_used && (
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-400">
-                Model: {message.metadata.model_used}
-              </span>
-              <button
-                onClick={handleCopy}
-                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
-              >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
+      {/* Main Chat Area */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-6">
+        {messages.length === 0 ? (
+          /* Welcome Screen */
+          <div className="h-full flex flex-col items-center justify-center py-8">
+            <div className="w-20 h-20 bg-gradient-to-br from-scout-500 to-scout-700 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-scout-500/25">
+              <Sparkles className="w-10 h-10 text-white" />
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
+            <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              Welcome, {user.name.split(' ')[0]}!
+            </h2>
+            <p className={`text-center max-w-md mb-8 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              I'm Scout, your enterprise knowledge assistant. Ask me anything about 
+              {user.access.length > 1 
+                ? ` ${user.access.slice(0, -1).join(', ')} and ${user.access.slice(-1)}` 
+                : ` ${user.access[0]}`} data.
+            </p>
 
-function SourceCard({ source, index }) {
-  const [expanded, setExpanded] = useState(false)
-  
-  return (
-    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-scout-100 rounded-lg flex items-center justify-center text-scout-600 text-xs font-semibold">
-            {index}
+            <div className="w-full max-w-2xl">
+              <p className={`text-sm font-medium mb-3 flex items-center gap-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <BookOpen className="w-4 h-4" />
+                Try asking
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {sampleQuestions.map((question, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSampleQuestion(question)}
+                    className={`text-left px-4 py-3 rounded-xl text-sm transition-all group
+                      ${darkMode 
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-scout-600' 
+                        : 'bg-white hover:bg-scout-50 text-slate-600 border border-slate-200 hover:border-scout-300'}`}
+                  >
+                    <span className={`group-hover:text-scout-600 ${darkMode ? 'group-hover:text-scout-400' : ''}`}>
+                      {question}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-700">{source.filename}</p>
-            <p className="text-xs text-slate-400 capitalize">{source.department} Department</p>
+        ) : (
+          /* Messages */
+          <div className="space-y-6 pb-4">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}
+              >
+                <div className={`max-w-[85%] ${message.role === 'user' ? 'order-2' : ''}`}>
+                  {message.role === 'assistant' && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 bg-gradient-to-br from-scout-500 to-scout-700 rounded-lg flex items-center justify-center">
+                        <Compass className="w-4 h-4 text-white" />
+                      </div>
+                      <span className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Scout</span>
+                    </div>
+                  )}
+                  
+                  <div className={`rounded-2xl px-4 py-3 ${
+                    message.role === 'user'
+                      ? 'bg-gradient-to-r from-scout-500 to-scout-600 text-white'
+                      : message.isError
+                        ? darkMode 
+                          ? 'bg-red-900/30 border border-red-800 text-red-300'
+                          : 'bg-red-50 border border-red-100 text-red-700'
+                        : darkMode
+                          ? 'bg-slate-800 border border-slate-700 text-slate-200'
+                          : 'bg-white border border-slate-200 text-slate-700'
+                  }`}>
+                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  </div>
+
+                  {/* Sources */}
+                  {message.sources && message.sources.length > 0 && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => toggleSources(index)}
+                        className={`flex items-center gap-2 text-sm transition-colors
+                          ${darkMode 
+                            ? 'text-slate-400 hover:text-scout-400' 
+                            : 'text-slate-500 hover:text-scout-600'}`}
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>{message.sources.length} source{message.sources.length > 1 ? 's' : ''}</span>
+                        {expandedSources[index] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                      
+                      {expandedSources[index] && (
+                        <div className={`mt-3 space-y-2 pl-2 border-l-2 
+                          ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                          {message.sources.map((source, sIdx) => {
+                            const DeptIcon = getDepartmentIcon(source.department)
+                            return (
+                              <div 
+                                key={sIdx}
+                                className={`p-3 rounded-xl
+                                  ${darkMode 
+                                    ? 'bg-slate-800/50 border border-slate-700' 
+                                    : 'bg-slate-50 border border-slate-100'}`}
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center
+                                      ${darkMode ? 'bg-slate-700' : 'bg-white border border-slate-200'}`}>
+                                      <DeptIcon className={`w-3.5 h-3.5 ${darkMode ? 'text-scout-400' : 'text-scout-600'}`} />
+                                    </div>
+                                    <div>
+                                      <p className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                                        {formatSourceName(source.source)}
+                                      </p>
+                                      <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        {formatDepartment(source.department)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full
+                                    ${darkMode 
+                                      ? 'bg-scout-900/50 text-scout-400' 
+                                      : 'bg-scout-100 text-scout-700'}`}>
+                                    #{sIdx + 1}
+                                  </span>
+                                </div>
+                                <p className={`text-sm leading-relaxed line-clamp-3
+                                  ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                                  {cleanSourceText(source.content)}
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            {isLoading && (
+              <div className="flex justify-start animate-fade-in-up">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-gradient-to-br from-scout-500 to-scout-700 rounded-lg flex items-center justify-center">
+                    <Compass className="w-4 h-4 text-white" />
+                  </div>
+                  <span className={`text-sm font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Scout</span>
+                </div>
+              </div>
+            )}
+            
+            {isLoading && (
+              <div className={`rounded-2xl px-4 py-3 inline-flex items-center gap-1 ml-8
+                ${darkMode 
+                  ? 'bg-slate-800 border border-slate-700' 
+                  : 'bg-white border border-slate-200'}`}>
+                <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
+                <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
+                <div className={`w-2 h-2 rounded-full typing-dot ${darkMode ? 'bg-slate-400' : 'bg-slate-400'}`}></div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
           </div>
-        </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-scout-600 hover:text-scout-700 whitespace-nowrap"
-        >
-          {expanded ? 'Show less' : 'Show more'}
-        </button>
-      </div>
-      
-      {expanded && source.chunk && (
-        <div className="mt-3 pt-3 border-t border-slate-200">
-          <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-            {source.chunk}
+        )}
+      </main>
+
+      {/* Input Area */}
+      <div className={`sticky bottom-0 border-t backdrop-blur-lg
+        ${darkMode 
+          ? 'bg-slate-900/95 border-slate-800' 
+          : 'bg-white/95 border-slate-200'}`}>
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <form onSubmit={handleSubmit} className="flex gap-3">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask me anything..."
+              disabled={isLoading}
+              className={`flex-1 px-4 py-3 rounded-xl border transition-all
+                ${darkMode 
+                  ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:bg-slate-700 focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20' 
+                  : 'bg-slate-50 border-slate-200 placeholder:text-slate-400 focus:bg-white focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20'
+                }
+                disabled:opacity-50 disabled:cursor-not-allowed`}
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="px-5 py-3 bg-gradient-to-r from-scout-500 to-scout-600 text-white rounded-xl
+                       hover:from-scout-600 hover:to-scout-700 
+                       disabled:opacity-50 disabled:cursor-not-allowed
+                       transition-all shadow-lg shadow-scout-500/25 hover:shadow-xl hover:shadow-scout-500/30"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </form>
+          <p className={`text-xs text-center mt-3 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            Scout only has access to data you're authorized to view based on your role.
           </p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function TypingIndicator() {
-  return (
-    <div className="flex justify-start animate-fade-in-up">
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-6 h-6 bg-gradient-to-br from-scout-500 to-scout-700 rounded-lg 
-                        flex items-center justify-center">
-            <Compass className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-xs font-medium text-slate-500">Scout</span>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-scout-400 rounded-full typing-dot"></div>
-            <div className="w-2 h-2 bg-scout-400 rounded-full typing-dot"></div>
-            <div className="w-2 h-2 bg-scout-400 rounded-full typing-dot"></div>
-          </div>
         </div>
       </div>
     </div>

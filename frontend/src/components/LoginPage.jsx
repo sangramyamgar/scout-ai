@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Eye, EyeOff, Compass, Shield, Zap, Users, ChevronDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Eye, EyeOff, Compass, Shield, Zap, Users, ChevronDown, Moon, Sun } from 'lucide-react'
 
 export default function LoginPage({ onLogin, demoUsers }) {
   const [email, setEmail] = useState('')
@@ -8,13 +8,25 @@ export default function LoginPage({ onLogin, demoUsers }) {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showDemoAccounts, setShowDemoAccounts] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('scout_darkMode')
+    return saved ? JSON.parse(saved) : false
+  })
+
+  useEffect(() => {
+    localStorage.setItem('scout_darkMode', JSON.stringify(darkMode))
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
     
-    // Simulate network delay
     await new Promise(r => setTimeout(r, 500))
     
     const result = onLogin(email, password)
@@ -38,7 +50,7 @@ export default function LoginPage({ onLogin, demoUsers }) {
   ]
 
   return (
-    <div className="min-h-screen flex">
+    <div className={`min-h-screen flex ${darkMode ? 'dark' : ''}`}>
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-scout-600 via-scout-700 to-scout-900 p-12 flex-col justify-between relative overflow-hidden">
         {/* Background Pattern */}
@@ -89,25 +101,38 @@ export default function LoginPage({ onLogin, demoUsers }) {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className={`flex-1 flex items-center justify-center p-8 
+        ${darkMode ? 'bg-slate-900' : 'bg-gradient-to-br from-slate-50 to-slate-100'}`}>
         <div className="w-full max-w-md">
+          {/* Dark mode toggle */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-lg transition-colors
+                ${darkMode ? 'bg-slate-800 text-slate-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+          </div>
+
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
             <div className="w-12 h-12 bg-gradient-to-br from-scout-500 to-scout-700 rounded-xl flex items-center justify-center">
               <Compass className="w-7 h-7 text-white" />
             </div>
-            <span className="text-3xl font-bold gradient-text">Scout</span>
+            <span className="text-3xl font-bold bg-gradient-to-r from-scout-600 to-scout-500 bg-clip-text text-transparent">Scout</span>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8">
+          <div className={`rounded-2xl shadow-xl p-8
+            ${darkMode ? 'bg-slate-800 shadow-slate-900/50' : 'bg-white shadow-slate-200/50'}`}>
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
-              <p className="text-slate-500 mt-2">Sign in to access your knowledge base</p>
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Welcome back</h2>
+              <p className={`mt-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Sign in to access your knowledge base</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                   Email address
                 </label>
                 <input
@@ -115,15 +140,17 @@ export default function LoginPage({ onLogin, demoUsers }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@scout.ai"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 
-                           focus:bg-white focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20
-                           transition-all duration-200 placeholder:text-slate-400"
+                  className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 placeholder:text-slate-400
+                    ${darkMode 
+                      ? 'bg-slate-700 border-slate-600 text-slate-200 focus:bg-slate-600 focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20' 
+                      : 'bg-slate-50 border-slate-200 focus:bg-white focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20'
+                    }`}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                   Password
                 </label>
                 <div className="relative">
@@ -132,15 +159,18 @@ export default function LoginPage({ onLogin, demoUsers }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 
-                             focus:bg-white focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20
-                             transition-all duration-200 placeholder:text-slate-400 pr-12"
+                    className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 placeholder:text-slate-400 pr-12
+                      ${darkMode 
+                        ? 'bg-slate-700 border-slate-600 text-slate-200 focus:bg-slate-600 focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20' 
+                        : 'bg-slate-50 border-slate-200 focus:bg-white focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20'
+                      }`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors
+                      ${darkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -148,7 +178,7 @@ export default function LoginPage({ onLogin, demoUsers }) {
               </div>
 
               {error && (
-                <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+                <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-800">
                   {error}
                 </div>
               )}
@@ -175,11 +205,14 @@ export default function LoginPage({ onLogin, demoUsers }) {
             </form>
 
             {/* Demo Accounts Dropdown */}
-            <div className="mt-6 pt-6 border-t border-slate-100">
+            <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
               <button
                 onClick={() => setShowDemoAccounts(!showDemoAccounts)}
-                className="w-full flex items-center justify-between px-4 py-3 text-sm text-slate-600 
-                         bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+                className={`w-full flex items-center justify-between px-4 py-3 text-sm rounded-xl transition-colors
+                  ${darkMode 
+                    ? 'text-slate-400 bg-slate-700 hover:bg-slate-600' 
+                    : 'text-slate-600 bg-slate-50 hover:bg-slate-100'
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -194,9 +227,11 @@ export default function LoginPage({ onLogin, demoUsers }) {
                     <button
                       key={demoEmail}
                       onClick={() => handleDemoLogin(demoEmail)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-sm
-                               bg-white border border-slate-200 rounded-xl
-                               hover:border-scout-300 hover:bg-scout-50 transition-all group"
+                      className={`w-full flex items-center justify-between px-4 py-3 text-sm rounded-xl transition-all group
+                        ${darkMode 
+                          ? 'bg-slate-700 border border-slate-600 hover:border-scout-500 hover:bg-slate-600' 
+                          : 'bg-white border border-slate-200 hover:border-scout-300 hover:bg-scout-50'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-gradient-to-br from-scout-100 to-scout-200 
@@ -206,12 +241,17 @@ export default function LoginPage({ onLogin, demoUsers }) {
                           </span>
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-slate-700 group-hover:text-scout-700">{userData.name}</p>
-                          <p className="text-xs text-slate-400">{userData.department}</p>
+                          <p className={`font-medium ${darkMode ? 'text-slate-200 group-hover:text-scout-400' : 'text-slate-700 group-hover:text-scout-700'}`}>
+                            {userData.name}
+                          </p>
+                          <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>{userData.department}</p>
                         </div>
                       </div>
-                      <span className="text-xs px-2 py-1 bg-slate-100 text-slate-500 rounded-full
-                                     group-hover:bg-scout-100 group-hover:text-scout-600">
+                      <span className={`text-xs px-2 py-1 rounded-full
+                        ${darkMode 
+                          ? 'bg-slate-600 text-slate-400 group-hover:bg-scout-900 group-hover:text-scout-400' 
+                          : 'bg-slate-100 text-slate-500 group-hover:bg-scout-100 group-hover:text-scout-600'
+                        }`}>
                         {userData.role === 'c_level' ? 'Executive' : userData.role}
                       </span>
                     </button>
@@ -221,7 +261,7 @@ export default function LoginPage({ onLogin, demoUsers }) {
             </div>
           </div>
 
-          <p className="text-center text-sm text-slate-400 mt-6">
+          <p className={`text-center text-sm mt-6 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
             This is a demo application. Use the demo accounts above to explore.
           </p>
         </div>
