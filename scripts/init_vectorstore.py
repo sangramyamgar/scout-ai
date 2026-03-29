@@ -15,7 +15,7 @@ sys.path.insert(0, str(project_root))
 def main():
     """Initialize vector store with all department documents."""
     print("=" * 60)
-    print("FinSolve AI Assistant - Vector Store Initialization")
+    print("Scout - Vector Store Initialization")
     print("=" * 60)
 
     # Check for required environment variables

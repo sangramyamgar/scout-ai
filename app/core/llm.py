@@ -18,7 +18,7 @@ settings = get_settings()
 
 
 # LangChain Prompt Templates
-RAG_SYSTEM_PROMPT = """You are an AI assistant for FinSolve Technologies, helping employees access company information.
+RAG_SYSTEM_PROMPT = """You are an AI assistant for the company, helping employees access company information.
 
 IMPORTANT RULES:
 1. Only answer based on the provided context. Do not make up information.
@@ -101,7 +101,7 @@ class LangChainLLMService:
 
         # Simple QA prompt for general questions
         self.simple_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful assistant for FinSolve Technologies. Answer questions professionally and concisely."),
+            ("system", "You are a helpful assistant for the company. Answer questions professionally and concisely."),
             ("human", "{question}"),
         ])
 

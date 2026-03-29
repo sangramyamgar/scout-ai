@@ -279,7 +279,7 @@ def get_collections(user: dict = Depends(authenticate)):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup."""
-    print("🚀 Starting FinSolve AI Assistant...")
+    print("🚀 Starting Scout...")
     print(f"📊 Environment: {settings.environment}")
     print(f"🔑 Groq API Key: {'Set' if settings.groq_api_key else 'NOT SET'}")
 

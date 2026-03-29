@@ -1,5 +1,5 @@
 """
-Streamlit UI for FinSolve AI Assistant.
+Streamlit UI for Scout.
 Provides a chat interface with role-based authentication.
 """
 
@@ -25,7 +25,7 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 # ============================================
 
 st.set_page_config(
-    page_title="FinSolve AI Assistant",
+    page_title="Scout",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -173,7 +173,7 @@ def logout():
 
 def show_login():
     """Display login form."""
-    st.title("🤖 FinSolve AI Assistant")
+    st.title("🤖 Scout")
     st.markdown("### Internal Knowledge Base Chatbot")
 
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -256,7 +256,7 @@ def show_chat():
                 st.rerun()
 
     # Main chat area
-    st.title("🤖 FinSolve AI Assistant")
+    st.title("🤖 Scout")
 
     # Display chat history
     for msg in st.session_state.messages:
@@ -274,7 +274,7 @@ def show_chat():
                         st.markdown("---")
 
     # Chat input
-    if prompt := st.chat_input("Ask a question about FinSolve..."):
+    if prompt := st.chat_input("Ask a question about the company..."):
         # Add user message
         st.session_state.messages.append({"role": "user", "content": prompt})
 

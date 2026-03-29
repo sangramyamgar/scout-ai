@@ -92,12 +92,12 @@ npm run dev  # Development server at http://localhost:3000
 
 | Role | Email | Password |
 |------|-------|----------|
-| **Executive** | michael.ross@finsolve.com | exec2024 |
-| **Finance** | sarah.mitchell@finsolve.com | finance2024 |
-| **Marketing** | james.chen@finsolve.com | marketing2024 |
-| **HR** | priya.sharma@finsolve.com | hr2024 |
-| **Engineering** | alex.torres@finsolve.com | eng2024 |
-| **Employee** | emma.wilson@finsolve.com | employee2024 |
+| **Executive** | michael.ross@scout.ai | exec2024 |
+| **Finance** | sarah.mitchell@scout.ai | finance2024 |
+| **Marketing** | james.chen@scout.ai | marketing2024 |
+| **HR** | priya.sharma@scout.ai | hr2024 |
+| **Engineering** | alex.torres@scout.ai | eng2024 |
+| **Employee** | emma.wilson@scout.ai | employee2024 |
 
 ## 📁 Project Structure
 
@@ -185,7 +185,3 @@ Metrics: Faithfulness, Answer Relevancy, Context Recall
 - [LangGraph Docs](https://langchain-ai.github.io/langgraph/)
 - [ChromaDB Docs](https://docs.trychroma.com/)
 - [Ragas Docs](https://docs.ragas.io/)
-
----
-
-Built for the [Codebasics Resume Project Challenge](https://codebasics.io/challenge/codebasics-gen-ai-data-science-resume-project-challenge)

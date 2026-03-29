@@ -1,5 +1,5 @@
 """
-Configuration settings for FinSolve AI Assistant.
+Configuration settings for Scout.
 Uses pydantic-settings for environment variable management.
 """
 
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # LangSmith (Optional)
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""
-    langchain_project: str = "finsolve-ai-assistant"
+    langchain_project: str = "scout-ai"
 
     # Model Configuration
     llm_model: str = "llama-3.3-70b-versatile"

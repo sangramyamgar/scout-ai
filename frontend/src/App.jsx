@@ -4,12 +4,12 @@ import ChatPage from './components/ChatPage'
 
 // Demo users with professional names and emails
 const DEMO_USERS = {
-  'sarah.mitchell@finsolve.com': { password: 'finance2024', role: 'finance', name: 'Sarah Mitchell', department: 'Finance', apiUser: 'Sam', apiPass: 'financepass' },
-  'james.chen@finsolve.com': { password: 'marketing2024', role: 'marketing', name: 'James Chen', department: 'Marketing', apiUser: 'Bruce', apiPass: 'securepass' },
-  'priya.sharma@finsolve.com': { password: 'hr2024', role: 'hr', name: 'Priya Sharma', department: 'Human Resources', apiUser: 'Natasha', apiPass: 'hrpass123' },
-  'alex.torres@finsolve.com': { password: 'eng2024', role: 'engineering', name: 'Alex Torres', department: 'Engineering', apiUser: 'Tony', apiPass: 'password123' },
-  'michael.ross@finsolve.com': { password: 'exec2024', role: 'c_level', name: 'Michael Ross', department: 'Executive', apiUser: 'Nick', apiPass: 'director123' },
-  'emma.wilson@finsolve.com': { password: 'employee2024', role: 'employee', name: 'Emma Wilson', department: 'General Staff', apiUser: 'Happy', apiPass: 'employee123' },
+  'sarah.mitchell@scout.ai': { password: 'finance2024', role: 'finance', name: 'Sarah Mitchell', department: 'Finance', apiUser: 'Sam', apiPass: 'financepass' },
+  'james.chen@scout.ai': { password: 'marketing2024', role: 'marketing', name: 'James Chen', department: 'Marketing', apiUser: 'Bruce', apiPass: 'securepass' },
+  'priya.sharma@scout.ai': { password: 'hr2024', role: 'hr', name: 'Priya Sharma', department: 'Human Resources', apiUser: 'Natasha', apiPass: 'hrpass123' },
+  'alex.torres@scout.ai': { password: 'eng2024', role: 'engineering', name: 'Alex Torres', department: 'Engineering', apiUser: 'Tony', apiPass: 'password123' },
+  'michael.ross@scout.ai': { password: 'exec2024', role: 'c_level', name: 'Michael Ross', department: 'Executive', apiUser: 'Nick', apiPass: 'director123' },
+  'emma.wilson@scout.ai': { password: 'employee2024', role: 'employee', name: 'Emma Wilson', department: 'General Staff', apiUser: 'Happy', apiPass: 'employee123' },
 }
 
 function App() {

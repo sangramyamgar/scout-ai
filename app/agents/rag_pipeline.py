@@ -355,7 +355,7 @@ def create_langchain_rag_chain(role: str):
 
     # Create prompt
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an AI assistant for FinSolve Technologies.
+        ("system", """You are an AI assistant for the company.
 Answer based only on the provided context. Cite sources as [Source N].
 If you can't find the answer, say so.
 

@@ -14,17 +14,17 @@ from langchain_core.documents import Document
 GOLDEN_DATASET = {
     "finance": [
         {
-            "question": "What was FinSolve's gross margin in 2024?",
+            "question": "What was the company's gross margin in 2024?",
             "ground_truth": "60%",
             "context_keywords": ["gross margin", "60%", "2024"],
         },
         {
-            "question": "What is the net margin for FinSolve Technologies?",
+            "question": "What is the net margin for the company Technologies?",
             "ground_truth": "12%",
             "context_keywords": ["net margin", "12%"],
         },
         {
-            "question": "How much did FinSolve spend on vendor services?",
+            "question": "How much did the company spend on vendor services?",
             "ground_truth": "$30M",
             "context_keywords": ["vendor services", "30M"],
         },
@@ -34,7 +34,7 @@ GOLDEN_DATASET = {
             "context_keywords": ["revenue", "grew", "25%"],
         },
         {
-            "question": "What is FinSolve's Days Sales Outstanding (DSO)?",
+            "question": "What is the company's Days Sales Outstanding (DSO)?",
             "ground_truth": "45 days",
             "context_keywords": ["DSO", "45 days"],
         },
@@ -51,14 +51,14 @@ GOLDEN_DATASET = {
             "context_keywords": ["maternity", "26 weeks"],
         },
         {
-            "question": "What are FinSolve's core values?",
+            "question": "What are the company's core values?",
             "ground_truth": "Integrity, Respect, Innovation, Customer Focus, Accountability",
             "context_keywords": ["integrity", "respect", "innovation"],
         },
     ],
     "engineering": [
         {
-            "question": "What compliance standards does FinSolve follow?",
+            "question": "What compliance standards does the company follow?",
             "ground_truth": "GDPR, DPDP, PCI-DSS",
             "context_keywords": ["GDPR", "DPDP", "PCI-DSS", "compliance"],
         },
@@ -72,12 +72,12 @@ GOLDEN_DATASET = {
     ],
     "general": [
         {
-            "question": "When was FinSolve Technologies founded?",
+            "question": "When was the company Technologies founded?",
             "ground_truth": "2016",
             "context_keywords": ["founded", "2016"],
         },
         {
-            "question": "What is FinSolve's vision?",
+            "question": "What is the company's vision?",
             "ground_truth": "To empower businesses and individuals through innovative technology solutions",
             "context_keywords": ["vision", "empower", "technology"],
         },

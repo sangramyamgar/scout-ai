@@ -1,5 +1,5 @@
 """
-Tests for FinSolve AI Assistant.
+Tests for Scout.
 """
 
 import pytest

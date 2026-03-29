@@ -114,7 +114,7 @@ export default function LoginPage({ onLogin, demoUsers }) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@finsolve.com"
+                  placeholder="you@scout.ai"
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 
                            focus:bg-white focus:border-scout-500 focus:ring-2 focus:ring-scout-500/20
                            transition-all duration-200 placeholder:text-slate-400"
