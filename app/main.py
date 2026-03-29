@@ -1,5 +1,5 @@
 """
-FinSolve AI Assistant - FastAPI Backend
+Scout AI - Enterprise Knowledge Assistant
 Production-grade RAG with RBAC, Guardrails, and Agentic AI
 """
 
@@ -22,17 +22,23 @@ settings = get_settings()
 # ============================================
 
 app = FastAPI(
-    title="FinSolve AI Assistant",
-    description="Internal chatbot with Role-Based Access Control",
+    title="Scout AI - Enterprise Knowledge Assistant",
+    description="AI-powered internal chatbot with Role-Based Access Control",
     version="1.0.0",
     docs_url="/docs" if not settings.is_production else None,
     redoc_url="/redoc" if not settings.is_production else None,
 )
 
-# CORS middleware for Streamlit frontend
+# CORS middleware for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately in production
+    allow_origins=[
+        "http://localhost:3000",   # Local development
+        "http://localhost:5173",   # Vite dev server
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "https://*.pages.dev",     # Cloudflare Pages
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,6 +48,8 @@ security = HTTPBasic()
 
 # ============================================
 # User Database (In production, use a real DB)
+# Maps API usernames to credentials for backend auth
+# Frontend uses professional email/password pairs
 # ============================================
 
 users_db: Dict[str, Dict[str, str]] = {

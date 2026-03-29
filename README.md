@@ -1,35 +1,40 @@
-# FinSolve AI Assistant 🤖
+# Scout AI 🧭
 
-A **production-grade RAG chatbot** with Role-Based Access Control (RBAC), Agentic AI workflows, and AWS deployment capabilities.
+**Enterprise Knowledge Assistant** — A production-grade RAG chatbot with Role-Based Access Control (RBAC), Agentic AI workflows, and cloud deployment.
+
+![Scout AI](https://img.shields.io/badge/Scout-AI-0ea5e9?style=for-the-badge)
+![AWS](https://img.shields.io/badge/AWS-Ready-FF9900?style=for-the-badge)
+![LangChain](https://img.shields.io/badge/LangChain-Powered-1a1a1a?style=for-the-badge)
 
 ## 🎯 Features
 
-- **RAG with RBAC**: Role-based access control ensures users only see authorized data
-- **Agentic AI Pipeline**: LangGraph-powered workflow with query routing and citation validation
-- **Hybrid Retrieval**: Combines semantic search (ChromaDB) with keyword search (BM25)
-- **Cross-Encoder Re-ranking**: Improves retrieval precision using Sentence Transformers
-- **Guardrails**: PII protection, prompt injection defense, and out-of-scope detection
-- **Citation Enforcement**: Responses include source references; declines to answer without context
-- **Free LLM Inference**: Uses Groq Cloud (Llama 3.3 70B) - no API costs
-- **Evaluation Pipeline**: Ragas-based quality metrics with CI/CD integration
+- **🔐 Role-Based Access Control**: Secure, department-specific data access
+- **🤖 Agentic AI Pipeline**: LangGraph-powered workflow with query routing and citation validation
+- **🔍 Hybrid Retrieval**: Combines semantic search (ChromaDB) with keyword search (BM25)
+- **📊 Cross-Encoder Re-ranking**: Improves retrieval precision using Sentence Transformers
+- **🛡️ Guardrails**: PII protection, prompt injection defense, and out-of-scope detection
+- **📝 Citation Enforcement**: Responses include source references; declines to answer without context
+- **💸 Free LLM Inference**: Uses Groq Cloud (Llama 3.3 70B) - no API costs
+- **📈 Evaluation Pipeline**: Ragas-based quality metrics with CI/CD integration
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      STREAMLIT UI                           │
+│              REACT FRONTEND (Cloudflare Pages)              │
+│                    Modern, Professional UI                   │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    FASTAPI BACKEND                          │
-│   Authentication → RBAC Middleware → Rate Limiter           │
+│                FASTAPI BACKEND (AWS / Local)                │
+│       Authentication → RBAC Middleware → Rate Limiter       │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              LANGGRAPH AGENTIC RAG PIPELINE                 │
-│  Guardrails → Retrieval → Rerank → Citation → Generation   │
+│    Guardrails → Retrieval → Rerank → Citation → Generate    │
 └─────────────────────────────────────────────────────────────┘
                               │
         ┌─────────────────────┼─────────────────────┐
@@ -40,61 +45,59 @@ A **production-grade RAG chatbot** with Role-Based Access Control (RBAC), Agenti
 
 ## 🚀 Quick Start
 
-### 1. Clone and Setup
+### Option 1: One-Click Start
 
 ```bash
+./run.sh
+```
+
+### Option 2: Manual Setup
+
+```bash
+# Clone and setup
 git clone <your-repo-url>
 cd ds-rpc-01
 
-# Create virtual environment
+# Backend setup
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate
 pip install -e .
-```
 
-### 2. Configure Environment
-
-```bash
-# Copy example env file
+# Configure API keys
 cp .env.example .env
+# Edit .env and add GROQ_API_KEY from https://console.groq.com/keys
 
-# Edit .env and add your Groq API key
-# Get a FREE key at: https://console.groq.com/keys
-```
-
-### 3. Initialize Vector Store
-
-```bash
+# Initialize vector store
 python scripts/init_vectorstore.py
+
+# Start backend
+uvicorn app.main:app --port 8000
 ```
 
-### 4. Run the Server
+### Frontend (React)
 
 ```bash
-# Start FastAPI backend
-uvicorn app.main:app --reload
-
-# In another terminal, start Streamlit frontend
-streamlit run app/streamlit_app.py
+cd frontend
+npm install
+npm run dev  # Development server at http://localhost:3000
 ```
 
-### 5. Access the Application
+### Access Points
 
+- **React UI**: http://localhost:3000
 - **API Docs**: http://localhost:8000/docs
-- **Chat UI**: http://localhost:8501
+- **Legacy Streamlit UI**: http://localhost:8501 (run `streamlit run app/streamlit_app.py`)
 
-## 👥 User Roles
+## 👥 Demo Accounts
 
-| Role | Username | Password | Access |
-|------|----------|----------|--------|
-| Engineering | Tony | password123 | Engineering docs + General |
-| Finance | Sam | financepass | Financial reports + General |
-| HR | Natasha | hrpass123 | HR data + General |
-| Marketing | Bruce | securepass | Marketing reports + General |
-| C-Level | Nick | director123 | **Full Access** |
-| Employee | Happy | employee123 | General info only |
+| Role | Email | Password |
+|------|-------|----------|
+| **Executive** | michael.ross@finsolve.com | exec2024 |
+| **Finance** | sarah.mitchell@finsolve.com | finance2024 |
+| **Marketing** | james.chen@finsolve.com | marketing2024 |
+| **HR** | priya.sharma@finsolve.com | hr2024 |
+| **Engineering** | alex.torres@finsolve.com | eng2024 |
+| **Employee** | emma.wilson@finsolve.com | employee2024 |
 
 ## 📁 Project Structure
 
@@ -102,7 +105,7 @@ streamlit run app/streamlit_app.py
 ds-rpc-01/
 ├── app/
 │   ├── main.py              # FastAPI application
-│   ├── streamlit_app.py     # Streamlit UI
+│   ├── streamlit_app.py     # Legacy Streamlit UI
 │   ├── core/
 │   │   ├── config.py        # Settings & RBAC roles
 │   │   ├── ingestion.py     # Document loading
@@ -116,18 +119,18 @@ ds-rpc-01/
 │   │   └── safety.py        # PII & injection protection
 │   └── evaluation/
 │       └── eval_pipeline.py # Ragas evaluation
+├── frontend/                # React + Tailwind UI
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── LoginPage.jsx
+│   │   │   └── ChatPage.jsx
+│   │   └── App.jsx
+│   └── package.json
 ├── data/                    # Department documents
-│   ├── engineering/
-│   ├── finance/
-│   ├── hr/
-│   ├── marketing/
-│   └── general/
 ├── scripts/
-│   └── init_vectorstore.py  # Initialization script
 ├── tests/
-├── pyproject.toml
-├── .env.example
-└── aws_guide.md             # AWS deployment guide
+├── aws_guide.md             # AWS deployment guide
+└── README.md
 ```
 
 ## 🔧 API Endpoints
@@ -141,26 +144,40 @@ ds-rpc-01/
 | `/roles` | GET | No | List available roles |
 | `/collections` | GET | Yes | Vector store stats |
 
-## 📊 Evaluation
+## ☁️ Deployment
 
-Run the evaluation pipeline to measure RAG quality:
+### Frontend → Cloudflare Pages (Free)
+
+1. Push to GitHub
+2. Connect repo to Cloudflare Pages
+3. Build command: `cd frontend && npm run build`
+4. Output directory: `frontend/dist`
+5. Set `VITE_API_URL` environment variable to your backend URL
+
+### Backend → AWS (Free Tier)
+
+See **[aws_guide.md](aws_guide.md)** for detailed step-by-step instructions:
+- Lambda + API Gateway (serverless)
+- ECS Fargate (containers)
+- Budget alerts and cost protection
+
+## 💰 Budget: Under $10
+
+| Service | Cost |
+|---------|------|
+| Groq Cloud (LLM) | **Free** (100K tokens/day) |
+| ChromaDB | **Free** (local storage) |
+| HuggingFace Models | **Free** (local inference) |
+| Cloudflare Pages | **Free** (unlimited requests) |
+| AWS Free Tier | **Free** (12 months) |
+
+## 📊 Evaluation
 
 ```bash
 python -m app.evaluation.eval_pipeline
 ```
 
-Metrics:
-- **Faithfulness**: Are responses grounded in context?
-- **Answer Relevancy**: Do responses answer the question?
-- **Context Recall**: Does retrieval find relevant info?
-
-## 💰 Budget: $0
-
-All components use free tiers:
-- **Groq Cloud**: Free LLM inference (Llama 3.3 70B)
-- **ChromaDB**: Local vector storage
-- **HuggingFace**: Local embeddings & reranker
-- **AWS Free Tier**: See [aws_guide.md](aws_guide.md)
+Metrics: Faithfulness, Answer Relevancy, Context Recall
 
 ## 📚 Resources
 
@@ -168,10 +185,6 @@ All components use free tiers:
 - [LangGraph Docs](https://langchain-ai.github.io/langgraph/)
 - [ChromaDB Docs](https://docs.trychroma.com/)
 - [Ragas Docs](https://docs.ragas.io/)
-
-## 🚧 AWS Deployment
-
-See **[aws_guide.md](aws_guide.md)** for detailed step-by-step AWS deployment instructions.
 
 ---
 
