@@ -8,7 +8,29 @@ wheels/
 
 # Virtual environments
 .venv
+venv/
 .idea/ 
 *.lock
-resources/vectorstore
+
+# Environment variables
 .env
+
+# Vector store persistence
+chroma_db/
+resources/vectorstore
+
+# Evaluation outputs
+evaluation_results.json
+
+# Lambda deployment
+lambda_layer/
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
