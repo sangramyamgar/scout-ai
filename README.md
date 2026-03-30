@@ -6,20 +6,20 @@ A production-grade RAG (Retrieval-Augmented Generation) chatbot that provides se
 
 ![Scout AI](https://img.shields.io/badge/AI-LangChain-blue) ![Python](https://img.shields.io/badge/Python-3.11-green) ![React](https://img.shields.io/badge/Frontend-React-61dafb) ![AWS](https://img.shields.io/badge/Cloud-AWS-orange) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-**🌐 Live Demo:** [scout.yamgar.com](https://scout.yamgar.com)
+**Live Demo:** [scout.yamgar.com](https://scout.yamgar.com)
 
 ---
 
 ## Features
 
-- 🔐 **Role-Based Access Control (RBAC)** - Secure access based on user roles (Finance, HR, Engineering, Marketing, Executive)
-- 🤖 **Agentic RAG Pipeline** - LangGraph-powered intelligent retrieval with 6-node workflow
-- 📊 **Multi-Department Support** - Isolated document collections per department
-- 🛡️ **PII Detection** - Built-in guardrails for sensitive information
-- 🎨 **Modern UI** - React + Tailwind with dark mode support
-- 📖 **Inline Citations** - Expandable sources with document references
-- ⚡ **Serverless Architecture** - AWS Lambda + API Gateway + Bedrock
-- 💰 **Cost-Optimized** - ~$1-3/month for demo usage
+- **Role-Based Access Control (RBAC)** - Secure access based on user roles (Finance, HR, Engineering, Marketing, Executive)
+- **Agentic RAG Pipeline** - LangGraph-powered intelligent retrieval with 6-node workflow
+- **Multi-Department Support** - Isolated document collections per department
+- **PII Detection** - Built-in guardrails for sensitive information
+- **Modern UI** - React + Tailwind with dark mode support
+- **Inline Citations** - Expandable sources with document references
+- **Serverless Architecture** - AWS Lambda + API Gateway + Bedrock
+- **Cost-Optimized** - ~$1-3/month for demo usage
 
 ---
 
