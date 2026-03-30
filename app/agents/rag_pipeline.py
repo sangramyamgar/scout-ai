@@ -13,7 +13,7 @@ from langgraph.graph import END, StateGraph
 
 from app.core.config import ROLES
 from app.core.llm import get_llm_service
-from app.core.reranker import get_reranker
+from app.core.reranker_llm import get_reranker  # Use lightweight LLM reranker
 from app.core.vectorstore import get_vector_store
 from app.guardrails.safety import get_guardrails
 

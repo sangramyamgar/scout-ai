@@ -41,10 +41,12 @@ app.add_middleware(
         "http://127.0.0.1:3001",
         "http://127.0.0.1:3002",
         "http://127.0.0.1:5173",
-        "https://*.pages.dev",     # Cloudflare Pages
+        "https://scout.yamgar.com",  # Production domain
+        "https://scout-ai-6wi.pages.dev",  # Cloudflare Pages
+        "https://*.scout-ai-6wi.pages.dev",  # Cloudflare Pages previews
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

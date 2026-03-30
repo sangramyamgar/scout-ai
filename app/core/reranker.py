@@ -26,10 +26,17 @@ class Reranker:
         Args:
             model_name: HuggingFace model name for cross-encoder
         """
-        model_name = model_name or settings.reranker_model
+        self.model_name = model_name or settings.reranker_model
+        self._model = None  # Lazy load
 
-        # Load cross-encoder model (runs locally, free)
-        self.model = CrossEncoder(model_name, max_length=512)
+    @property
+    def model(self):
+        """Lazy-load cross-encoder model on first use."""
+        if self._model is None:
+            print("🔄 Loading reranker model...")
+            self._model = CrossEncoder(self.model_name, max_length=512)
+            print("✅ Reranker model loaded")
+        return self._model
 
     def rerank(
         self,

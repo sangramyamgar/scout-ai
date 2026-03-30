@@ -1,187 +1,274 @@
-# Scout AI 🧭
+# Scout AI 🔍
 
-**Enterprise Knowledge Assistant** — A production-grade RAG chatbot with Role-Based Access Control (RBAC), Agentic AI workflows, and cloud deployment.
+**Enterprise Knowledge Assistant** with Role-Based Access Control
 
-![Scout AI](https://img.shields.io/badge/Scout-AI-0ea5e9?style=for-the-badge)
-![AWS](https://img.shields.io/badge/AWS-Ready-FF9900?style=for-the-badge)
-![LangChain](https://img.shields.io/badge/LangChain-Powered-1a1a1a?style=for-the-badge)
+A production-grade RAG (Retrieval-Augmented Generation) chatbot that provides secure, role-based access to enterprise knowledge using LangChain, LangGraph, and modern AI infrastructure.
 
-## 🎯 Features
+![Scout AI](https://img.shields.io/badge/AI-LangChain-blue) ![Python](https://img.shields.io/badge/Python-3.11-green) ![React](https://img.shields.io/badge/Frontend-React-61dafb) ![AWS](https://img.shields.io/badge/Cloud-AWS-orange) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-- **🔐 Role-Based Access Control**: Secure, department-specific data access
-- **🤖 Agentic AI Pipeline**: LangGraph-powered workflow with query routing and citation validation
-- **🔍 Hybrid Retrieval**: Combines semantic search (ChromaDB) with keyword search (BM25)
-- **📊 Cross-Encoder Re-ranking**: Improves retrieval precision using Sentence Transformers
-- **🛡️ Guardrails**: PII protection, prompt injection defense, and out-of-scope detection
-- **📝 Citation Enforcement**: Responses include source references; declines to answer without context
-- **💸 Free LLM Inference**: Uses Groq Cloud (Llama 3.3 70B) - no API costs
-- **📈 Evaluation Pipeline**: Ragas-based quality metrics with CI/CD integration
+**🌐 Live Demo:** [scout.yamgar.com](https://scout.yamgar.com)
 
-## 🏗️ Architecture
+---
+
+## Features
+
+- 🔐 **Role-Based Access Control (RBAC)** - Secure access based on user roles (Finance, HR, Engineering, Marketing, Executive)
+- 🤖 **Agentic RAG Pipeline** - LangGraph-powered intelligent retrieval with 6-node workflow
+- 📊 **Multi-Department Support** - Isolated document collections per department
+- 🛡️ **PII Detection** - Built-in guardrails for sensitive information
+- 🎨 **Modern UI** - React + Tailwind with dark mode support
+- 📖 **Inline Citations** - Expandable sources with document references
+- ⚡ **Serverless Architecture** - AWS Lambda + API Gateway + Bedrock
+- 💰 **Cost-Optimized** - ~$1-3/month for demo usage
+
+---
+
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              REACT FRONTEND (Cloudflare Pages)              │
-│                    Modern, Professional UI                   │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                FASTAPI BACKEND (AWS / Local)                │
-│       Authentication → RBAC Middleware → Rate Limiter       │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│              LANGGRAPH AGENTIC RAG PIPELINE                 │
-│    Guardrails → Retrieval → Rerank → Citation → Generate    │
-└─────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-   ChromaDB            Groq Cloud           Sentence
- (Vector Store)      (Llama 3.3 70B)     Transformers
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              SCOUT AI ARCHITECTURE                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────────────────┐
+│  Cloudflare     │     │  AWS API        │     │  AWS Lambda (Container)     │
+│  Pages          │────▶│  Gateway        │────▶│                             │
+│  (React UI)     │     │  (HTTP API)     │     │  ┌─────────────────────┐    │
+└─────────────────┘     └─────────────────┘     │  │  FastAPI + Mangum   │    │
+                                                │  └──────────┬──────────┘    │
+                                                │             │               │
+                                                │  ┌──────────▼──────────┐    │
+                                                │  │  LangGraph Pipeline │    │
+                                                │  │  (6-Node RAG)       │    │
+                                                │  └──────────┬──────────┘    │
+                                                │             │               │
+                                                │  ┌─────┬────┴────┬─────┐   │
+                                                │  │     │         │     │   │
+                                                └──┼─────┼─────────┼─────┼───┘
+                                                   ▼     ▼         ▼     ▼
+                                             ┌─────────┐ ┌───────┐ ┌─────────┐
+                                             │ChromaDB │ │Bedrock│ │  Groq   │
+                                             │(Vectors)│ │(Embed)│ │ (LLM)   │
+                                             └─────────┘ └───────┘ └─────────┘
 ```
 
-## 🚀 Quick Start
+### LangGraph RAG Pipeline
 
-### Option 1: One-Click Start
+```
+┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
+│   Input    │───▶│   Route    │───▶│  Retrieve  │───▶│  Rerank    │───▶│  Generate  │───▶│   Output   │
+│ Guardrails │    │   Query    │    │   (RBAC)   │    │  Results   │    │  Response  │    │ Guardrails │
+└────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘    └────────────┘
+```
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- Groq API key (free at [console.groq.com](https://console.groq.com))
+
+### Local Development
 
 ```bash
-./run.sh
-```
-
-### Option 2: Manual Setup
-
-```bash
-# Clone and setup
-git clone <your-repo-url>
-cd ds-rpc-01
+# Clone repository
+git clone https://github.com/sangramyamgar/scout-ai.git
+cd scout-ai
 
 # Backend setup
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -e .
 
-# Configure API keys
+# Create .env file
 cp .env.example .env
-# Edit .env and add GROQ_API_KEY from https://console.groq.com/keys
+# Edit .env and add your GROQ_API_KEY
 
 # Initialize vector store
 python scripts/init_vectorstore.py
 
 # Start backend
-uvicorn app.main:app --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend (React)
+```bash
+# Frontend setup (new terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+Visit http://localhost:5173
+
+---
+
+## Demo Accounts
+
+| Role | Email | Password | Access |
+|------|-------|----------|--------|
+| Finance | sarah.mitchell@scout.ai | finance2024 | Finance + General |
+| Marketing | james.chen@scout.ai | marketing2024 | Marketing + General |
+| HR | priya.sharma@scout.ai | hr2024 | HR + General |
+| Engineering | alex.torres@scout.ai | eng2024 | Engineering + General |
+| Executive | michael.ross@scout.ai | exec2024 | **All Departments** |
+| Employee | emma.wilson@scout.ai | employee2024 | General Only |
+
+---
+
+## Tech Stack
+
+### Backend
+| Technology | Purpose |
+|------------|---------|
+| **FastAPI** | High-performance async API framework |
+| **LangChain** | LLM application framework |
+| **LangGraph** | Agentic workflow orchestration |
+| **ChromaDB** | Vector database for embeddings |
+| **AWS Bedrock** | Titan embeddings (production) |
+| **Mangum** | AWS Lambda adapter for ASGI |
+
+### Frontend
+| Technology | Purpose |
+|------------|---------|
+| **React 18** | UI component library |
+| **Tailwind CSS** | Utility-first styling |
+| **Vite** | Fast build tool |
+| **Lucide React** | Icon library |
+
+### AI/ML
+| Model | Provider | Purpose |
+|-------|----------|---------|
+| **Llama 3.3 70B** | Groq | LLM inference |
+| **Titan Embed Text v1** | AWS Bedrock | Document embeddings |
+| **Keyword Reranker** | Custom | Result reranking |
+
+### Infrastructure
+| Service | Purpose |
+|---------|---------|
+| **AWS Lambda** | Serverless compute (container) |
+| **AWS API Gateway** | HTTP API endpoint |
+| **AWS ECR** | Docker image registry |
+| **AWS Bedrock** | Managed embeddings |
+| **Cloudflare Pages** | Frontend hosting |
+
+---
+
+## Project Structure
+
+```
+scout-ai/
+├── app/
+│   ├── agents/
+│   │   └── rag_pipeline.py    # LangGraph 6-node RAG pipeline
+│   ├── core/
+│   │   ├── config.py          # Settings & role definitions
+│   │   ├── llm.py             # Groq LLM service
+│   │   ├── vectorstore.py     # ChromaDB + Bedrock embeddings
+│   │   └── reranker_llm.py    # Lightweight keyword reranker
+│   ├── guardrails/
+│   │   └── safety.py          # PII detection & input validation
+│   ├── lambda_handler.py      # AWS Lambda entry point
+│   └── main.py                # FastAPI application
+├── data/
+│   ├── engineering/           # Technical documentation
+│   ├── finance/               # Financial reports
+│   ├── general/               # Employee handbook
+│   ├── hr/                    # HR policies & data
+│   └── marketing/             # Marketing reports
+├── frontend/
+│   ├── src/
+│   │   ├── components/        # React components
+│   │   └── App.jsx            # Main app with routing
+│   └── .env.production        # Production API URL
+├── scripts/
+│   └── init_vectorstore.py    # Initialize vector database
+├── tests/                     # Test suite
+├── Dockerfile                 # Lambda container image
+├── requirements-lambda.txt    # Production dependencies
+└── pyproject.toml             # Project configuration
+```
+
+---
+
+## Deployment
+
+### AWS Lambda (Backend)
+
+```bash
+# Build container
+docker build --platform linux/amd64 -t scout-ai .
+
+# Push to ECR
+aws ecr get-login-password | docker login --username AWS --password-stdin <account>.dkr.ecr.us-east-1.amazonaws.com
+docker tag scout-ai:latest <account>.dkr.ecr.us-east-1.amazonaws.com/scout-ai:latest
+docker push <account>.dkr.ecr.us-east-1.amazonaws.com/scout-ai:latest
+
+# Update Lambda
+aws lambda update-function-code --function-name scout-ai-backend --image-uri <ecr-uri>:latest
+```
+
+### Cloudflare Pages (Frontend)
 
 ```bash
 cd frontend
-npm install
-npm run dev  # Development server at http://localhost:3000
+npm run build
+npx wrangler pages deploy dist --project-name=scout-ai
 ```
 
-### Access Points
+---
 
-- **React UI**: http://localhost:3000
-- **API Docs**: http://localhost:8000/docs
-- **Legacy Streamlit UI**: http://localhost:8501 (run `streamlit run app/streamlit_app.py`)
-
-## 👥 Demo Accounts
-
-| Role | Email | Password |
-|------|-------|----------|
-| **Executive** | michael.ross@scout.ai | exec2024 |
-| **Finance** | sarah.mitchell@scout.ai | finance2024 |
-| **Marketing** | james.chen@scout.ai | marketing2024 |
-| **HR** | priya.sharma@scout.ai | hr2024 |
-| **Engineering** | alex.torres@scout.ai | eng2024 |
-| **Employee** | emma.wilson@scout.ai | employee2024 |
-
-## 📁 Project Structure
-
-```
-ds-rpc-01/
-├── app/
-│   ├── main.py              # FastAPI application
-│   ├── streamlit_app.py     # Legacy Streamlit UI
-│   ├── core/
-│   │   ├── config.py        # Settings & RBAC roles
-│   │   ├── ingestion.py     # Document loading
-│   │   ├── vectorstore.py   # ChromaDB integration
-│   │   ├── retrieval.py     # Hybrid search (Vector + BM25)
-│   │   ├── reranker.py      # Cross-encoder re-ranking
-│   │   └── llm.py           # Groq LLM integration
-│   ├── agents/
-│   │   └── rag_pipeline.py  # LangGraph workflow
-│   ├── guardrails/
-│   │   └── safety.py        # PII & injection protection
-│   └── evaluation/
-│       └── eval_pipeline.py # Ragas evaluation
-├── frontend/                # React + Tailwind UI
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── LoginPage.jsx
-│   │   │   └── ChatPage.jsx
-│   │   └── App.jsx
-│   └── package.json
-├── data/                    # Department documents
-├── scripts/
-├── tests/
-├── aws_guide.md             # AWS deployment guide
-└── README.md
-```
-
-## 🔧 API Endpoints
-
-| Endpoint | Method | Auth | Description |
-|----------|--------|------|-------------|
-| `/health` | GET | No | Health check |
-| `/login` | GET | Yes | Validate credentials |
-| `/chat` | POST | Yes | Send chat message |
-| `/usage` | GET | Yes | Get usage stats |
-| `/roles` | GET | No | List available roles |
-| `/collections` | GET | Yes | Vector store stats |
-
-## ☁️ Deployment
-
-### Frontend → Cloudflare Pages (Free)
-
-1. Push to GitHub
-2. Connect repo to Cloudflare Pages
-3. Build command: `cd frontend && npm run build`
-4. Output directory: `frontend/dist`
-5. Set `VITE_API_URL` environment variable to your backend URL
-
-### Backend → AWS (Free Tier)
-
-See **[aws_guide.md](aws_guide.md)** for detailed step-by-step instructions:
-- Lambda + API Gateway (serverless)
-- ECS Fargate (containers)
-- Budget alerts and cost protection
-
-## 💰 Budget: Under $10
+## Cost Estimate (Monthly)
 
 | Service | Cost |
 |---------|------|
-| Groq Cloud (LLM) | **Free** (100K tokens/day) |
-| ChromaDB | **Free** (local storage) |
-| HuggingFace Models | **Free** (local inference) |
-| Cloudflare Pages | **Free** (unlimited requests) |
-| AWS Free Tier | **Free** (12 months) |
+| AWS Lambda | ~$0-2 (1M free requests/month) |
+| API Gateway | ~$0-1 (1M free requests/month) |
+| Bedrock Embeddings | ~$0.50 |
+| ECR Storage | ~$0.10 (363MB image) |
+| Cloudflare Pages | **Free** |
+| **Total** | **~$1-3/month** |
 
-## 📊 Evaluation
+---
+
+## Environment Variables
 
 ```bash
-python -m app.evaluation.eval_pipeline
+# Required
+GROQ_API_KEY=gsk_...              # Groq API key
+
+# Optional
+ENVIRONMENT=production            # development | production
+LANGCHAIN_TRACING_V2=false       # Enable LangSmith tracing
+LANGCHAIN_API_KEY=               # LangSmith API key
 ```
 
-Metrics: Faithfulness, Answer Relevancy, Context Recall
+---
 
-## 📚 Resources
+## API Endpoints
 
-- [Groq Console](https://console.groq.com/) - Get free API key
-- [LangGraph Docs](https://langchain-ai.github.io/langgraph/)
-- [ChromaDB Docs](https://docs.trychroma.com/)
-- [Ragas Docs](https://docs.ragas.io/)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/health` | No | Health check |
+| GET | `/login` | Basic | Validate credentials |
+| POST | `/chat` | Basic | Chat with RAG pipeline |
+| GET | `/usage` | Basic | User's API usage stats |
+| GET | `/roles` | No | List available roles |
+| GET | `/collections` | Basic | Vector store stats |
+
+---
+
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
+## Acknowledgments
+
+- [LangChain](https://langchain.com) for the LLM framework
+- [Groq](https://groq.com) for fast LLM inference
+- [AWS](https://aws.amazon.com) for serverless infrastructure
+- [Cloudflare](https://cloudflare.com) for frontend hosting

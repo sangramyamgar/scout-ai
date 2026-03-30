@@ -1,13 +1,14 @@
 """
 Vector store management using LangChain + ChromaDB.
 Handles embedding storage and retrieval with RBAC filtering.
+Uses AWS Bedrock Titan for embeddings (fast, no model loading).
 """
 
 import os
 from typing import List, Optional, Dict
 
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_aws import BedrockEmbeddings
 from langchain_core.documents import Document
 
 from app.core.config import ROLES, get_settings
@@ -19,6 +20,7 @@ class LangChainVectorStore:
     """
     LangChain-based vector store with RBAC-aware retrieval.
     Uses Chroma as the underlying vector database.
+    Uses AWS Bedrock Titan for embeddings.
     Creates separate collections per department for access control.
     """
 
@@ -32,15 +34,23 @@ class LangChainVectorStore:
         self.persist_directory = persist_directory or settings.chroma_persist_directory
         os.makedirs(self.persist_directory, exist_ok=True)
 
-        # Initialize HuggingFace embeddings (free, runs locally)
-        self._embeddings = HuggingFaceEmbeddings(
-            model_name=settings.embedding_model,
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
-        )
+        # Lazy-load embeddings (don't load until first use)
+        self._embeddings = None
 
         # Store collection instances
         self._collections: Dict[str, Chroma] = {}
+
+    @property
+    def embeddings(self):
+        """Lazy-load AWS Bedrock embeddings on first access."""
+        if self._embeddings is None:
+            print("🔄 Initializing AWS Bedrock embeddings...")
+            self._embeddings = BedrockEmbeddings(
+                model_id="amazon.titan-embed-text-v1",
+                region_name="us-east-1",
+            )
+            print("✅ Bedrock embeddings ready")
+        return self._embeddings
 
     def _get_collection_name(self, department: str) -> str:
         """Get a valid ChromaDB collection name for a department."""
@@ -59,7 +69,7 @@ class LangChainVectorStore:
         if department not in self._collections:
             self._collections[department] = Chroma(
                 collection_name=collection_name,
-                embedding_function=self._embeddings,
+                embedding_function=self.embeddings,  # Uses lazy-loaded property
                 persist_directory=self._get_collection_path(collection_name),
             )
         return self._collections[department]

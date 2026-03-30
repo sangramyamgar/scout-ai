@@ -245,14 +245,23 @@ export default function ChatPage({ user, onLogout }) {
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://localhost:8000/chat', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      
+      // Create abort controller with 60s timeout (Lambda cold starts can take ~30s)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000)
+      
+      const response = await fetch(`${apiUrl}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Basic ' + btoa(`${user.apiUser}:${user.apiPass}`)
         },
-        body: JSON.stringify({ message: input })
+        body: JSON.stringify({ message: input }),
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
 
       const data = await response.json()
       
@@ -271,9 +280,12 @@ export default function ChatPage({ user, onLogout }) {
       }
     } catch (error) {
       console.error('Chat error:', error)
+      const errorMessage = error.name === 'AbortError' 
+        ? 'Request timed out. The server may be starting up - please try again.'
+        : `Unable to connect: ${error.message}. Please try again.`
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Unable to connect to the server. Please ensure the backend is running.',
+        content: errorMessage,
         isError: true 
       }])
     }
